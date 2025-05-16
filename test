@@ -1,0 +1,170 @@
+bool button_bool = false;
+bool play = false;
+int count = 0;
+int mode = 0;
+int random_time = 0;
+int can_push_count = 0;
+int buttonState = 0;
+int score = 0;
+
+int d_count = 0;
+int d_counter = 0;
+
+int level = 0;
+int check_time = 500;
+
+void setup() {
+  pinMode(A0, INPUT);
+  pinMode(2, OUTPUT);
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+  digitalWrite(2, LOW);
+  randomSeed(analogRead(0));
+}
+
+void loop() {
+  delay(1);
+  buttonState = digitalRead(A0);
+  ButtonCheck();
+
+  Count();
+
+  // 長押し検出（1秒）
+  if (count >= 1000) {
+    play = true;
+    score = 0;
+    digitalWrite(2, HIGH);
+    digitalWrite(13, HIGH);
+    delay(1000);
+    digitalWrite(2, LOW);
+    digitalWrite(13, LOW);
+    count = 0;
+  }
+
+  if (play && mode == 0) {
+    delay(1000);
+    random_time = random(1, 30);
+    delay(random_time * 100);
+    digitalWrite(2, HIGH);
+    mode = 1;
+  }
+
+  if (mode == 1) {
+    can_push_count++;
+    buttonState = digitalRead(A0);
+    ButtonCheck();
+    if (button_bool == 1) {
+      mode = 3;
+    }
+    if (can_push_count > check_time) {
+      mode = 2;  
+    }
+  }
+
+  // 成功
+  if (mode == 3) {
+    digitalWrite(13, HIGH);
+    delay(1000);
+    digitalWrite(13, LOW);
+
+    // リセット
+    mode = 0;
+    can_push_count = 0;
+    digitalWrite(2, LOW);
+    score++;
+  }
+
+  // 失敗
+  if (mode == 2) {
+    digitalWrite(2, LOW);
+    digitalWrite(13, HIGH);
+    delay(400);
+    digitalWrite(13, LOW);
+    delay(100);
+    digitalWrite(13, HIGH);
+    delay(400);
+    digitalWrite(13, LOW);
+    delay(1000);
+    if (score != 0) {
+      for (int i = 0; i < score; i++) {
+        digitalWrite(2, HIGH);  
+        digitalWrite(13, HIGH);  
+        delay(250);             
+        digitalWrite(2, LOW);    
+        digitalWrite(13, LOW);  
+        delay(250);           
+      }
+    }
+
+    // リセット
+    mode = 0;
+    play = false;
+    can_push_count = 0;
+    digitalWrite(2, LOW);
+  }
+
+  if (mode == 4) {
+    digitalWrite(13, HIGH);
+  }
+}
+
+void ButtonCheck() {
+  if (buttonState == 0) {
+    button_bool = true;
+  } else {
+    button_bool = false;
+  }
+}
+
+void Count() {
+  if (d_counter != 0) {
+    d_count++;
+    if (d_count > 400) {
+      d_count = 0;
+      d_counter = 0;
+      if (mode == 4) {
+        change_level();
+      }
+    }
+  }
+  if (button_bool && !play) {
+    count++;
+  } else {
+    if (count < 400 && count > 10) {
+      d_counter++;
+      if (d_counter == 2) {
+        if (mode != 4) {
+          mode = 4;
+          digitalWrite(13, HIGH);
+        } else {
+          mode = 0;
+          digitalWrite(13, LOW);
+        }
+        d_count = 0;
+        d_counter = 0;
+      }
+    }
+
+    count = 0;
+  }
+}
+
+void change_level() {
+  if (level == 0) {
+    level++;
+    check_time = 250;
+  } else if (level == 1) {
+    level++;
+    check_time = 175;
+  } else if (level == 2) {
+    level = 0;
+    check_time = 500;
+  }
+  digitalWrite(2, HIGH);
+  delay(check_time);
+  digitalWrite(2, LOW);
+  delay(check_time);
+  digitalWrite(2, HIGH);
+  delay(check_time);
+  digitalWrite(2, LOW);
+}
